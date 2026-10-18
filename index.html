@@ -1,0 +1,370 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#080d19">
+  <meta name="description" content="An interactive, expandable learning map for core operating system concepts.">
+  <title>Operating System — Interactive Learning Map</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #080d19;
+      --surface: #101827;
+      --surface-raised: #141f31;
+      --text: #edf4ff;
+      --muted: #98a8bf;
+      --line: rgba(157, 181, 215, .18);
+      --blue: #53a7ff;
+      --green: #43d6a2;
+      --orange: #ffad5c;
+      --radius: 20px;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    * { box-sizing: border-box; }
+    body {
+      min-width: 320px;
+      margin: 0;
+      color: var(--text);
+      background:
+        radial-gradient(ellipse at 50% -14%, rgba(55, 105, 178, .2), transparent 49%),
+        radial-gradient(rgba(133, 160, 204, .10) .7px, transparent .7px) 0 0 / 24px 24px,
+        var(--bg);
+    }
+    button { font: inherit; }
+    .page { width: min(1360px, calc(100% - 48px)); margin: 0 auto; padding: 52px 0 44px; }
+    .hero { text-align: center; position: relative; z-index: 1; }
+    .eyebrow {
+      display: inline-flex; align-items: center; gap: 9px; padding: 7px 12px;
+      border: 1px solid rgba(119, 166, 232, .2); border-radius: 999px;
+      color: #aec8ea; background: rgba(51, 91, 145, .12);
+      font-size: .72rem; font-weight: 750; letter-spacing: .14em; text-transform: uppercase;
+    }
+    .eyebrow::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: #70b8ff; box-shadow: 0 0 12px #70b8ff; }
+    h1 { margin: 19px 0 10px; font-size: clamp(2.25rem, 5vw, 4.15rem); line-height: 1.04; letter-spacing: -.055em; }
+    .gradient-text { color: transparent; background: linear-gradient(100deg, #f4f8ff 28%, #8fc5ff 72%, #72e3ca); background-clip: text; }
+    .hero p { max-width: 650px; margin: 0 auto; color: var(--muted); font-size: clamp(.94rem, 1.5vw, 1.05rem); line-height: 1.65; }
+    .map { position: relative; margin-top: 39px; }
+    .topic-grid { display: grid; width: min(800px, 100%); grid-template-columns: minmax(0, 1fr); gap: 18px; align-items: start; margin: 0 auto; }
+    .topic-column { position: relative; min-width: 0; --accent: var(--blue); --glow: rgba(83, 167, 255, .18); }
+    .topic-column.green { --accent: var(--green); --glow: rgba(67, 214, 162, .15); }
+    .topic-column.orange { --accent: var(--orange); --glow: rgba(255, 173, 92, .16); }
+    .topic-card {
+      overflow: hidden; border: 1px solid color-mix(in srgb, var(--accent) 26%, transparent);
+      border-radius: var(--radius); background: linear-gradient(155deg, rgba(20, 31, 49, .98), rgba(12, 19, 32, .98));
+      box-shadow: 0 15px 48px rgba(0, 0, 0, .22), 0 0 34px var(--glow);
+      transition: transform .22s ease, box-shadow .22s ease, border-color .22s ease;
+    }
+    .topic-card:hover { transform: translateY(-3px); border-color: color-mix(in srgb, var(--accent) 54%, transparent); box-shadow: 0 20px 54px rgba(0, 0, 0, .3), 0 0 42px var(--glow); }
+    .topic-head { padding: 19px 18px 15px; }
+    .topic-topline { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+    .topic-icon { display: grid; width: 43px; height: 43px; flex: 0 0 auto; place-items: center; border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent); border-radius: 13px; color: var(--accent); background: color-mix(in srgb, var(--accent) 9%, transparent); }
+    .topic-icon svg { width: 22px; height: 22px; }
+    .topic-toggle { display: flex; width: 100%; align-items: center; gap: 13px; padding: 0; border: 0; color: inherit; text-align: left; background: transparent; cursor: pointer; }
+    .topic-title { display: block; font-size: 1.04rem; line-height: 1.32; font-weight: 760; letter-spacing: -.02em; }
+    .topic-kicker { display: block; margin-top: 5px; color: var(--muted); font-size: .75rem; }
+    .chevron { display: grid; width: 29px; height: 29px; flex: 0 0 auto; place-items: center; margin-left: auto; border: 1px solid rgba(170, 191, 220, .16); border-radius: 9px; color: #afc1db; transition: transform .24s ease, background .2s; }
+    .chevron svg { width: 14px; height: 14px; }
+    [aria-expanded="true"] > .chevron { transform: rotate(90deg); background: rgba(255,255,255,.06); }
+    .topic-toggle:focus-visible, .node-toggle:focus-visible { outline: 2px solid var(--accent, #8fc5ff); outline-offset: 3px; }
+    .topic-hint { display: flex; align-items: center; gap: 7px; margin: 16px 0 0 56px; color: #91a2ba; font-size: .72rem; }
+    .topic-hint .hint-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 8px var(--accent); }
+    .branch { display: grid; grid-template-rows: 0fr; opacity: 0; transition: grid-template-rows .36s cubic-bezier(.2,.7,.2,1), opacity .25s ease; }
+    .branch.is-open { grid-template-rows: 1fr; opacity: 1; }
+    .branch-inner { min-height: 0; overflow: hidden; }
+    .topic-branch > .branch-inner { border-top: 1px solid rgba(155, 179, 212, .1); }
+    .tree { list-style: none; margin: 0; padding: 13px 13px 15px 18px; }
+    .tree-item { position: relative; padding-left: 17px; }
+    .tree-item + .tree-item { margin-top: 7px; }
+    .tree-item::before { position: absolute; content: ""; top: -12px; bottom: 14px; left: 4px; border-left: 1px solid rgba(143, 166, 198, .27); }
+    .tree-item::after { position: absolute; content: ""; top: 16px; left: 4px; width: 12px; border-top: 1px solid rgba(143, 166, 198, .34); }
+    .tree-item:last-child::before { bottom: auto; height: 29px; }
+    .node-box { overflow: hidden; border: 1px solid rgba(148, 171, 203, .13); border-radius: 12px; background: rgba(17, 27, 43, .76); transition: border-color .2s, background .2s; }
+    .node-box:hover, .node-box.is-active { border-color: color-mix(in srgb, var(--accent) 42%, transparent); background: rgba(24, 38, 59, .9); }
+    .node-toggle { display: flex; width: 100%; min-height: 43px; align-items: center; gap: 9px; padding: 8px 9px 8px 11px; border: 0; color: #dce7f7; text-align: left; background: transparent; cursor: pointer; }
+    .node-marker { width: 7px; height: 7px; flex: 0 0 auto; border: 1px solid var(--accent); border-radius: 2px; background: color-mix(in srgb, var(--accent) 27%, transparent); transform: rotate(45deg); }
+    .node-label { min-width: 0; font-size: .82rem; line-height: 1.35; font-weight: 660; }
+    .node-toggle .chevron { width: 24px; height: 24px; }
+    .node-description { margin: 0 11px 11px 27px; padding: 9px 0 0; border-top: 1px solid rgba(155, 179, 212, .1); color: #aab9ce; font-size: .75rem; line-height: 1.55; }
+    .node-branch > .branch-inner { padding: 0 8px 8px 0; }
+    .node-branch .tree { padding: 4px 0 0 14px; }
+    .node-branch .tree-item { padding-left: 14px; }
+    .node-branch .tree-item::after { width: 10px; }
+    .footer-note { display: flex; justify-content: center; align-items: center; gap: 8px; margin: 26px 0 0; color: #73849c; font-size: .74rem; text-align: center; }
+    .footer-note svg { width: 14px; height: 14px; color: #83a9d9; }
+    @media (min-width: 1000px) { .topic-card { min-height: 164px; } }
+    @media (max-width: 900px) {
+      .page { width: min(760px, calc(100% - 36px)); padding-top: 38px; }
+      .topic-grid { gap: 18px; }
+      .topic-head { padding: 16px 14px 14px; }
+      .topic-icon { width: 38px; height: 38px; }
+      .topic-title { font-size: .92rem; }
+      .topic-hint { margin-left: 50px; }
+    }
+    @media (max-width: 650px) {
+      .page { width: min(460px, calc(100% - 30px)); padding: 31px 0 32px; }
+      .hero p { max-width: 390px; }
+      .map { margin-top: 28px; }
+      .topic-grid { grid-template-columns: minmax(0, 1fr); gap: 18px; }
+      .topic-card { min-height: 0; }
+      .topic-head { padding: 16px 17px 14px; }
+      .topic-title { font-size: 1rem; }
+      .tree { padding-left: 19px; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; animation-duration: .01ms !important; }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <header class="hero">
+      <div class="eyebrow">Interactive learning map</div>
+      <h1><span class="gradient-text">Operating System</span></h1>
+      <p>Explore the core concepts one branch at a time. Expand a topic to reveal its learning path, then open any node for a concise explanation.</p>
+    </header>
+
+    <section class="map" aria-label="Operating system topic tree">
+      <div class="topic-grid" id="topic-grid"></div>
+    </section>
+    <p class="footer-note">
+      <svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M10 2.5 16 5v4.2c0 4.1-2.5 6.8-6 8.3-3.5-1.5-6-4.2-6-8.3V5l6-2.5Z" stroke="currentColor" stroke-width="1.4"/><path d="m7.4 9.9 1.7 1.7 3.6-3.7" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      A growing study map · Expand any branch to explore
+    </p>
+  </main>
+
+  <script>
+    // Add or edit learning nodes here; each node can have its own nested children.
+    const topics = [
+      {
+        id: "process-management",
+        title: "Process Management",
+        short: "Processes, states & control",
+        icon: "process",
+        color: "blue",
+        children: [
+          {
+            title: "Process Concept",
+            description: "A process is a program in execution, together with its current state and the resources it uses.",
+            children: [
+              { title: "Program vs. Process", description: "A program is a passive set of instructions; a process is an active instance of those instructions." },
+              { title: "Process States", description: "Common states include new, ready, running, waiting, and terminated; the OS moves processes between them." }
+            ]
+          },
+          {
+            title: "Process Control Block (PCB)",
+            description: "The OS keeps per-process information in a PCB, such as its state, program counter, CPU registers, and scheduling data."
+          },
+          {
+            title: "Process Operations",
+            description: "The OS creates, schedules, suspends, resumes, and terminates processes as programs run.",
+            children: [
+              { title: "Creation & Termination", description: "A process may create child processes, and eventually exits or is terminated by the OS." },
+              { title: "Context Switching", description: "The OS saves one process's CPU state and restores another's so the processor can switch between them." }
+            ]
+          },
+          {
+            title: "Threads",
+            description: "Threads are execution paths within a process. They share process resources while maintaining their own execution state.",
+            children: [
+              { title: "User-Level Threads", description: "Managed by a user-space thread library, without each operation requiring a kernel thread operation." },
+              { title: "Kernel-Level Threads", description: "Managed and scheduled by the operating system kernel." }
+            ]
+          }
+        ]
+      },
+      {
+        id: "ipc",
+        title: "Inter Process Communication (IPC)",
+        short: "Processes exchange data & signals",
+        icon: "ipc",
+        color: "green",
+        children: [
+          {
+            title: "Shared Memory",
+            description: "Processes communicate by reading and writing a shared memory region; synchronization is needed to coordinate access.",
+            children: [
+              { title: "Synchronization", description: "Coordination mechanisms help processes safely access shared data without conflicting updates." },
+              { title: "Producer–Consumer", description: "A common pattern where one process produces data and another consumes it through a shared buffer." }
+            ]
+          },
+          {
+            title: "Message Passing",
+            description: "Processes exchange discrete messages through OS-managed send and receive operations.",
+            children: [
+              { title: "Pipes", description: "A byte stream that commonly connects related processes; a named pipe can also be accessed by name." },
+              { title: "Message Queues", description: "Messages are stored in a queue and retrieved by receiving processes, often with message boundaries preserved." },
+              { title: "Sockets", description: "Communication endpoints that let processes exchange data locally or across a network." }
+            ]
+          },
+          {
+            title: "Signals",
+            description: "Signals provide a lightweight way to notify a process that an event has occurred; they generally carry little data."
+          }
+        ]
+      },
+      {
+        id: "cpu-scheduling",
+        title: "CPU Scheduling",
+        short: "Choosing the next process to run",
+        icon: "cpu",
+        color: "orange",
+        children: [
+          {
+            title: "Scheduling Types",
+            description: "Scheduling can be classified by whether the OS may take the CPU away from a running process.",
+            children: [
+              {
+                title: "Preemptive Scheduling",
+                description: "The OS may interrupt a running process and reassign the CPU, for example when a time slice expires or a higher-priority task arrives.",
+                children: [
+                  { title: "Round Robin (RR)", description: "Each ready process gets a fixed time quantum in turn; an unfinished process returns to the ready queue." },
+                  { title: "Shortest Remaining Time First (SRTF)", description: "The preemptive form of shortest-job scheduling: run the process with the least CPU burst time remaining." },
+                  { title: "Preemptive Priority", description: "The CPU is assigned to the highest-priority ready process; a newly ready higher-priority process may preempt it." }
+                ]
+              },
+              {
+                title: "Non-Preemptive Scheduling",
+                description: "Once a process gets the CPU, it keeps it until it finishes its CPU burst or blocks voluntarily.",
+                children: [
+                  { title: "First-Come, First-Served (FCFS)", description: "Processes run in the order they arrive in the ready queue." },
+                  { title: "Shortest Job First (SJF)", description: "Among ready processes, choose the one with the shortest predicted next CPU burst." },
+                  { title: "Non-Preemptive Priority", description: "Choose the highest-priority ready process; it keeps the CPU until its burst completes or it blocks." }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ];
+
+    const icons = {
+      process: '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="3.5" y="4" width="7" height="6" rx="1.5" stroke="currentColor" stroke-width="1.6"/><rect x="13.5" y="14" width="7" height="6" rx="1.5" stroke="currentColor" stroke-width="1.6"/><path d="M10.5 7h3a2 2 0 0 1 2 2v5M13.5 17h-3a2 2 0 0 1-2-2v-5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="m7 11-1.5 1.5L4 11m13-2 1.5-1.5L20 9" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+      ipc: '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 6.5h10a2 2 0 0 1 2 2V12m-2 5.5H8a2 2 0 0 1-2-2V12" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="m13 9 3 3 3-3m-8 6-3-3-3 3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="4" cy="6.5" r="1.5" fill="currentColor"/><circle cx="20" cy="17.5" r="1.5" fill="currentColor"/></svg>',
+      cpu: '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="6" y="6" width="12" height="12" rx="2" stroke="currentColor" stroke-width="1.6"/><path d="M9 9h6v6H9zM9 2.5v3m6-3v3M9 18.5v3m6-3v3M2.5 9h3m-3 6h3m13-6h3m-3 6h3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>',
+      chevron: '<svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="m6 3.5 4.5 4.5L6 12.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+    };
+
+    const grid = document.querySelector("#topic-grid");
+
+    function makeNode(node) {
+      const item = document.createElement("li");
+      item.className = "tree-item";
+      const box = document.createElement("div");
+      box.className = "node-box";
+      const toggle = document.createElement("button");
+      toggle.type = "button";
+      toggle.className = "node-toggle";
+      toggle.setAttribute("aria-expanded", "false");
+      toggle.setAttribute("aria-label", `${node.title}${node.children?.length ? ", expand branch" : ", show explanation"}`);
+      const marker = document.createElement("span");
+      marker.className = "node-marker";
+      marker.setAttribute("aria-hidden", "true");
+      const label = document.createElement("span");
+      label.className = "node-label";
+      label.textContent = node.title;
+      const chevron = document.createElement("span");
+      chevron.className = "chevron";
+      chevron.innerHTML = icons.chevron;
+      chevron.setAttribute("aria-hidden", "true");
+      toggle.append(marker, label, chevron);
+      box.append(toggle);
+
+      if (node.description) {
+        const description = document.createElement("p");
+        description.className = "node-description branch";
+        description.setAttribute("aria-hidden", "true");
+        const inner = document.createElement("span");
+        inner.className = "branch-inner";
+        inner.textContent = node.description;
+        description.append(inner);
+        box.append(description);
+      }
+      if (node.children?.length) {
+        const branch = document.createElement("div");
+        branch.className = "branch node-branch";
+        branch.setAttribute("aria-hidden", "true");
+        const inner = document.createElement("div");
+        inner.className = "branch-inner";
+        const childList = document.createElement("ul");
+        childList.className = "tree";
+        node.children.forEach(child => childList.append(makeNode(child)));
+        inner.append(childList);
+        branch.append(inner);
+        box.append(branch);
+      }
+      toggle.addEventListener("click", () => {
+        const isOpen = toggle.getAttribute("aria-expanded") === "true";
+        toggle.setAttribute("aria-expanded", String(!isOpen));
+        box.classList.toggle("is-active", !isOpen);
+        box.querySelectorAll(":scope > .branch").forEach(branch => {
+          branch.classList.toggle("is-open", !isOpen);
+          branch.setAttribute("aria-hidden", String(isOpen));
+        });
+      });
+      item.append(box);
+      return item;
+    }
+
+    function makeTopic(topic) {
+      const column = document.createElement("article");
+      column.className = `topic-column ${topic.color}`;
+      const card = document.createElement("div");
+      card.className = "topic-card";
+      const head = document.createElement("div");
+      head.className = "topic-head";
+      const button = document.createElement("button");
+      button.className = "topic-toggle";
+      button.type = "button";
+      button.setAttribute("aria-expanded", "false");
+      button.setAttribute("aria-controls", `${topic.id}-branch`);
+      const icon = document.createElement("span");
+      icon.className = "topic-icon";
+      icon.innerHTML = icons[topic.icon];
+      icon.setAttribute("aria-hidden", "true");
+      const labels = document.createElement("span");
+      labels.className = "topic-labels";
+      const title = document.createElement("span");
+      title.className = "topic-title";
+      title.textContent = topic.title;
+      const subtitle = document.createElement("span");
+      subtitle.className = "topic-kicker";
+      subtitle.textContent = topic.short;
+      labels.append(title, subtitle);
+      const chevron = document.createElement("span");
+      chevron.className = "chevron";
+      chevron.innerHTML = icons.chevron;
+      chevron.setAttribute("aria-hidden", "true");
+      button.append(icon, labels, chevron);
+      head.append(button);
+      const hint = document.createElement("div");
+      hint.className = "topic-hint";
+    //   hint.innerHTML = '<span class="hint-dot" aria-hidden="true"></span><span>Click to explore this branch</span>';
+      head.append(hint);
+      const branch = document.createElement("div");
+      branch.className = "branch topic-branch";
+      branch.id = `${topic.id}-branch`;
+      branch.setAttribute("aria-hidden", "true");
+      const inner = document.createElement("div");
+      inner.className = "branch-inner";
+      const list = document.createElement("ul");
+      list.className = "tree";
+      topic.children.forEach(node => list.append(makeNode(node)));
+      inner.append(list);
+      branch.append(inner);
+      button.addEventListener("click", () => {
+        const isOpen = button.getAttribute("aria-expanded") === "true";
+        button.setAttribute("aria-expanded", String(!isOpen));
+        branch.classList.toggle("is-open", !isOpen);
+        branch.setAttribute("aria-hidden", String(isOpen));
+      });
+      card.append(head, branch);
+      column.append(card);
+      return column;
+    }
+
+    topics.forEach(topic => grid.append(makeTopic(topic)));
+
+  </script>
+</body>
+</html>
