@@ -4,8 +4,8 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#080d19">
-  <meta name="description" content="An interactive, expandable learning map for core operating system concepts.">
-  <title>Operating System — Interactive Learning Map</title>
+  <meta name="description" content="Explore operating system concepts and compare six CPU scheduling techniques with interactive Gantt charts.">
+  <title>Operating System — Learning Map &amp; Scheduling Simulator</title>
   <style>
     :root {
       color-scheme: dark;
@@ -90,6 +90,44 @@
     .node-branch .tree { padding: 4px 0 0 14px; }
     .node-branch .tree-item { padding-left: 14px; }
     .node-branch .tree-item::after { width: 10px; }
+    .scheduler { margin: 0 13px 18px; padding: 18px; border: 1px solid rgba(255, 173, 92, .2); border-radius: 16px; background: rgba(12, 19, 32, .72); }
+    .visually-hidden { position: absolute; width: 1px; height: 1px; padding: 0; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+    .scheduler-heading h2 { margin: 0; font-size: 1.08rem; letter-spacing: -.02em; }
+    .scheduler-heading p, .scheduler-help { color: var(--muted); font-size: .78rem; line-height: 1.55; }
+    .scheduler-heading p { margin: 7px 0 0; }
+    .scheduler-help { margin: 12px 0; }
+    .process-table-wrap, .metrics-wrap { overflow-x: auto; }
+    .process-table, .metrics-table { width: 100%; border-collapse: collapse; text-align: left; }
+    .process-table { min-width: 540px; }
+    .process-table th, .metrics-table th { padding: 8px 7px; color: #9fb2cc; font-size: .7rem; font-weight: 700; }
+    .process-table td, .metrics-table td { padding: 6px 7px; border-top: 1px solid rgba(155, 179, 212, .1); }
+    .process-table input, .quantum-control input { width: 100%; min-height: 36px; padding: 7px 9px; border: 1px solid rgba(148, 171, 203, .22); border-radius: 8px; color: var(--text); background: rgba(7, 13, 24, .72); font: inherit; font-size: .8rem; }
+    .process-table input:focus, .quantum-control input:focus { outline: 2px solid rgba(255, 173, 92, .75); outline-offset: 1px; }
+    .process-table .process-id { width: 100px; }
+    .remove-process, .secondary-button, .calculate-button { min-height: 36px; padding: 7px 11px; border: 1px solid rgba(148, 171, 203, .2); border-radius: 9px; color: #dce7f7; background: rgba(255, 255, 255, .04); cursor: pointer; font: inherit; font-size: .76rem; font-weight: 650; }
+    .remove-process { min-width: 36px; padding: 5px 9px; }
+    .remove-process:hover, .secondary-button:hover { background: rgba(255, 255, 255, .09); }
+    .scheduler-actions { display: flex; flex-wrap: wrap; align-items: end; gap: 10px; margin-top: 13px; }
+    .quantum-control { display: grid; width: 130px; gap: 5px; color: #bdcbe0; font-size: .72rem; font-weight: 650; }
+    .calculate-button { border-color: rgba(255, 173, 92, .48); color: #17120c; background: var(--orange); }
+    .calculate-button:hover { background: #ffc17f; }
+    .scheduler-error { margin: 12px 0 0; color: #ff9e9e; font-size: .8rem; }
+    .scheduler-results { display: grid; gap: 14px; margin-top: 18px; }
+    .scheduler-placeholder { margin: 0; padding: 15px; border: 1px dashed rgba(148, 171, 203, .2); border-radius: 10px; color: var(--muted); font-size: .8rem; text-align: center; }
+    .schedule-result { min-width: 0; padding: 15px; border: 1px solid rgba(148, 171, 203, .14); border-radius: 13px; background: rgba(20, 31, 49, .56); }
+    .schedule-result h3 { margin: 0; font-size: .91rem; }
+    .schedule-result > p { margin: 5px 0 12px; color: var(--muted); font-size: .72rem; line-height: 1.45; }
+    .gantt-scroll { overflow-x: auto; padding-bottom: 5px; }
+    .gantt-inner { display: grid; gap: 5px; }
+    .gantt-track, .gantt-times { display: grid; grid-template-columns: inherit; }
+    .gantt-block { display: grid; min-height: 48px; align-content: center; justify-items: center; gap: 2px; border-right: 2px solid #101827; border-radius: 5px; color: #08111e; font-size: .71rem; font-weight: 760; }
+    .gantt-block small { font-size: .64rem; font-weight: 600; }
+    .gantt-block.idle { color: #c4cede; background: #39465a; }
+    .gantt-times span { display: flex; justify-content: space-between; color: #99abc3; font-size: .64rem; }
+    .metrics-heading { margin: 14px 0 5px; color: #c4d2e5; font-size: .72rem; font-weight: 700; }
+    .metrics-table { min-width: 390px; }
+    .metrics-table th, .metrics-table td { padding: 6px 7px; font-size: .68rem; }
+    .metrics-average { margin: 9px 0 0; color: #c4d2e5; font-size: .72rem; }
     .footer-note { display: flex; justify-content: center; align-items: center; gap: 8px; margin: 26px 0 0; color: #73849c; font-size: .74rem; text-align: center; }
     .footer-note svg { width: 14px; height: 14px; color: #83a9d9; }
     @media (min-width: 1000px) { .topic-card { min-height: 164px; } }
@@ -110,6 +148,8 @@
       .topic-head { padding: 16px 17px 14px; }
       .topic-title { font-size: 1rem; }
       .tree { padding-left: 19px; }
+      .scheduler { margin: 0 9px 14px; padding: 13px; }
+      .schedule-result { padding: 12px; }
     }
     @media (prefers-reduced-motion: reduce) {
       *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; animation-duration: .01ms !important; }
@@ -121,7 +161,7 @@
     <header class="hero">
       <div class="eyebrow">Interactive learning map</div>
       <h1><span class="gradient-text">Operating System</span></h1>
-      <p>Explore the core concepts one branch at a time. Expand a topic to reveal its learning path, then open any node for a concise explanation.</p>
+      <p>Explore core operating system concepts one branch at a time. Open CPU Scheduling to enter process data and compare six techniques with interactive Gantt charts.</p>
     </header>
 
     <section class="map" aria-label="Operating system topic tree">
@@ -306,6 +346,340 @@
       return item;
     }
 
+    function createProcess(values, index) {
+      return { ...values, index, remaining: values.burst };
+    }
+
+    function addGanttSegment(segments, pid, start, end) {
+      if (end <= start) return;
+      const previous = segments[segments.length - 1];
+      if (previous && previous.pid === pid && previous.end === start) {
+        previous.end = end;
+      } else {
+        segments.push({ pid, start, end });
+      }
+    }
+
+    function scheduleNonPreemptive(processes, strategy) {
+      const pending = processes.map(process => createProcess(process, process.index));
+      const segments = [];
+      const completion = new Map();
+      let time = 0;
+
+      while (pending.length) {
+        const ready = pending.filter(process => process.arrival <= time);
+        if (!ready.length) {
+          const nextArrival = Math.min(...pending.map(process => process.arrival));
+          addGanttSegment(segments, "IDLE", time, nextArrival);
+          time = nextArrival;
+          continue;
+        }
+
+        ready.sort(strategy);
+        const process = ready[0];
+        const start = time;
+        time += process.burst;
+        addGanttSegment(segments, process.pid, start, time);
+        completion.set(process.pid, time);
+        pending.splice(pending.indexOf(process), 1);
+      }
+
+      return { segments, completion };
+    }
+
+    function schedulePreemptive(processes, strategy) {
+      const pending = processes.map(process => createProcess(process, process.index));
+      const segments = [];
+      const completion = new Map();
+      let time = 0;
+      let completed = 0;
+
+      while (completed < pending.length) {
+        const ready = pending.filter(process => process.remaining > 0 && process.arrival <= time);
+        if (!ready.length) {
+          const nextArrival = Math.min(...pending
+            .filter(process => process.remaining > 0)
+            .map(process => process.arrival));
+          addGanttSegment(segments, "IDLE", time, nextArrival);
+          time = nextArrival;
+          continue;
+        }
+
+        ready.sort(strategy);
+        const process = ready[0];
+        const nextArrival = pending
+          .filter(candidate => candidate.remaining > 0 && candidate.arrival > time)
+          .reduce((next, candidate) => Math.min(next, candidate.arrival), Infinity);
+        const runFor = Math.min(process.remaining, nextArrival - time);
+        addGanttSegment(segments, process.pid, time, time + runFor);
+        process.remaining -= runFor;
+        time += runFor;
+
+        if (process.remaining === 0) {
+          completion.set(process.pid, time);
+          completed += 1;
+        }
+      }
+
+      return { segments, completion };
+    }
+
+    function scheduleRoundRobin(processes, quantum) {
+      const ordered = processes
+        .map(process => createProcess(process, process.index))
+        .sort((a, b) => a.arrival - b.arrival || a.index - b.index);
+      const segments = [];
+      const completion = new Map();
+      const ready = [];
+      let time = 0;
+      let nextProcess = 0;
+
+      while (completion.size < ordered.length) {
+        if (!ready.length && nextProcess < ordered.length && time < ordered[nextProcess].arrival) {
+          const nextArrival = ordered[nextProcess].arrival;
+          addGanttSegment(segments, "IDLE", time, nextArrival);
+          time = nextArrival;
+        }
+
+        while (nextProcess < ordered.length && ordered[nextProcess].arrival <= time) {
+          ready.push(ordered[nextProcess]);
+          nextProcess += 1;
+        }
+
+        const process = ready.shift();
+        const runFor = Math.min(quantum, process.remaining);
+        addGanttSegment(segments, process.pid, time, time + runFor);
+        process.remaining -= runFor;
+        time += runFor;
+
+        while (nextProcess < ordered.length && ordered[nextProcess].arrival <= time) {
+          ready.push(ordered[nextProcess]);
+          nextProcess += 1;
+        }
+
+        if (process.remaining > 0) {
+          ready.push(process);
+        } else {
+          completion.set(process.pid, time);
+        }
+      }
+
+      return { segments, completion };
+    }
+
+    function renderScheduleResult(algorithm, processes, schedule) {
+      const result = document.createElement("article");
+      result.className = "schedule-result";
+      const heading = document.createElement("h3");
+      heading.textContent = algorithm.name;
+      const description = document.createElement("p");
+      description.textContent = algorithm.description;
+      result.append(heading, description);
+
+      const chartScroll = document.createElement("div");
+      chartScroll.className = "gantt-scroll";
+      chartScroll.setAttribute("role", "img");
+      const chart = document.createElement("div");
+      chart.className = "gantt-inner";
+      chart.style.minWidth = `${Math.max(100, schedule.segments.length * 64)}px`;
+      chart.style.gridTemplateColumns = schedule.segments
+        .map(segment => `minmax(64px, ${segment.end - segment.start}fr)`)
+        .join(" ");
+      chartScroll.setAttribute("aria-label", `${algorithm.name} Gantt chart: ${schedule.segments.map(segment => `${segment.pid} from ${segment.start} to ${segment.end}`).join(", ")}`);
+      const track = document.createElement("div");
+      track.className = "gantt-track";
+      for (const segment of schedule.segments) {
+        const block = document.createElement("div");
+        block.className = `gantt-block${segment.pid === "IDLE" ? " idle" : ""}`;
+        if (segment.pid !== "IDLE") {
+          const process = processes.find(candidate => candidate.pid === segment.pid);
+          block.style.background = ["#8fc5ff", "#72e3ca", "#ffcf8a", "#d6b4ff", "#ff9fa5", "#b6d99a"][process.index % 6];
+        }
+        block.setAttribute("aria-hidden", "true");
+        const label = document.createElement("span");
+        label.textContent = segment.pid;
+        const duration = document.createElement("small");
+        duration.textContent = `${segment.end - segment.start} ${segment.end - segment.start === 1 ? "unit" : "units"}`;
+        block.append(label, duration);
+        track.append(block);
+      }
+      const times = document.createElement("div");
+      times.className = "gantt-times";
+      schedule.segments.forEach(segment => {
+        const timeLabel = document.createElement("span");
+        timeLabel.textContent = `${segment.start} — ${segment.end}`;
+        times.append(timeLabel);
+      });
+      chart.append(track, times);
+      chartScroll.append(chart);
+      result.append(chartScroll);
+
+      const metricsHeading = document.createElement("div");
+      metricsHeading.className = "metrics-heading";
+      metricsHeading.textContent = "Process timing (time units)";
+      const metricsWrap = document.createElement("div");
+      metricsWrap.className = "metrics-wrap";
+      const table = document.createElement("table");
+      table.className = "metrics-table";
+      const tableHead = document.createElement("thead");
+      const headerRow = document.createElement("tr");
+      ["Process", "Completion", "Turnaround", "Waiting"].forEach(text => {
+        const cell = document.createElement("th");
+        cell.scope = "col";
+        cell.textContent = text;
+        headerRow.append(cell);
+      });
+      tableHead.append(headerRow);
+      const tableBody = document.createElement("tbody");
+      let totalTurnaround = 0;
+      let totalWaiting = 0;
+      processes.forEach(process => {
+        const completion = schedule.completion.get(process.pid);
+        const turnaround = completion - process.arrival;
+        const waiting = turnaround - process.burst;
+        totalTurnaround += turnaround;
+        totalWaiting += waiting;
+        const row = document.createElement("tr");
+        [process.pid, completion, turnaround, waiting].forEach(value => {
+          const cell = document.createElement("td");
+          cell.textContent = String(value);
+          row.append(cell);
+        });
+        tableBody.append(row);
+      });
+      table.append(tableHead, tableBody);
+      metricsWrap.append(table);
+      const average = document.createElement("p");
+      average.className = "metrics-average";
+      average.textContent = `Average turnaround: ${(totalTurnaround / processes.length).toFixed(2)} · Average waiting: ${(totalWaiting / processes.length).toFixed(2)}`;
+      result.append(metricsHeading, metricsWrap, average);
+      return result;
+    }
+
+    function makeScheduler() {
+      const scheduler = document.createElement("section");
+      scheduler.className = "scheduler";
+      scheduler.setAttribute("aria-labelledby", "scheduler-title");
+      scheduler.innerHTML = `
+        <div class="scheduler-heading">
+          <h2 id="scheduler-title">Scheduling Simulator</h2>
+          <p>Enter process details to compare all six CPU scheduling techniques.</p>
+        </div>
+        <p class="scheduler-help">Priority uses smaller numbers for higher priority. Arrival and burst times must be whole numbers; the Round Robin quantum is shared by all charts.</p>
+        <form class="scheduler-form" novalidate>
+          <div class="process-table-wrap">
+            <table class="process-table">
+              <thead><tr><th scope="col">Process ID</th><th scope="col">Arrival time</th><th scope="col">Burst time</th><th scope="col">Priority</th><th scope="col"><span class="visually-hidden">Remove process</span></th></tr></thead>
+              <tbody class="process-rows"></tbody>
+            </table>
+          </div>
+          <div class="scheduler-actions">
+            <button class="secondary-button add-process" type="button">Add process</button>
+            <label class="quantum-control">Round Robin quantum<input class="quantum-input" type="number" min="1" max="100000" step="1" value="2" required></label>
+            <button class="calculate-button" type="submit">Generate all charts</button>
+          </div>
+          <p class="scheduler-error" role="alert" hidden></p>
+        </form>
+        <div class="scheduler-results" aria-live="polite">
+          <p class="scheduler-placeholder">Add your processes, then generate the charts to compare their schedules and timing metrics.</p>
+        </div>`;
+
+      const form = scheduler.querySelector(".scheduler-form");
+      const rows = scheduler.querySelector(".process-rows");
+      const addButton = scheduler.querySelector(".add-process");
+      const error = scheduler.querySelector(".scheduler-error");
+      const results = scheduler.querySelector(".scheduler-results");
+      let nextId = 1;
+
+      function addProcessRow(values = {}) {
+        const row = document.createElement("tr");
+        const id = values.pid || `P${nextId}`;
+        nextId += 1;
+        row.innerHTML = `
+          <td><input class="process-id" aria-label="Process ID" type="text" maxlength="12" pattern="[A-Za-z0-9_\\x2d]+" required></td>
+          <td><input aria-label="Arrival time" type="number" min="0" max="100000" step="1" required></td>
+          <td><input aria-label="Burst time" type="number" min="1" max="100000" step="1" required></td>
+          <td><input aria-label="Priority" type="number" min="1" max="100000" step="1" required></td>
+          <td><button class="remove-process" type="button" aria-label="Remove ${id}">×</button></td>`;
+        const inputs = row.querySelectorAll("input");
+        inputs[0].value = id;
+        inputs[1].value = values.arrival ?? 0;
+        inputs[2].value = values.burst ?? 1;
+        inputs[3].value = values.priority ?? 1;
+        rows.append(row);
+        addButton.disabled = rows.children.length >= 20;
+        addButton.setAttribute("aria-disabled", String(addButton.disabled));
+      }
+
+      [
+        { pid: "P1", arrival: 0, burst: 5, priority: 2 },
+        { pid: "P2", arrival: 1, burst: 3, priority: 1 },
+        { pid: "P3", arrival: 2, burst: 8, priority: 4 },
+        { pid: "P4", arrival: 3, burst: 6, priority: 2 }
+      ].forEach(process => addProcessRow(process));
+
+      addButton.addEventListener("click", () => {
+        if (rows.children.length < 20) addProcessRow();
+      });
+
+      rows.addEventListener("click", event => {
+        if (event.target.closest(".remove-process") && rows.children.length > 1) {
+          event.target.closest("tr").remove();
+          addButton.disabled = false;
+          addButton.setAttribute("aria-disabled", "false");
+        }
+      });
+
+      form.addEventListener("submit", event => {
+        event.preventDefault();
+        error.hidden = true;
+        error.textContent = "";
+        if (!form.reportValidity()) return;
+
+        const processes = [...rows.querySelectorAll("tr")].map((row, index) => {
+          const inputs = row.querySelectorAll("input");
+          return {
+            pid: inputs[0].value.trim(),
+            arrival: Number(inputs[1].value),
+            burst: Number(inputs[2].value),
+            priority: Number(inputs[3].value),
+            index
+          };
+        });
+        if (new Set(processes.map(process => process.pid.toLowerCase())).size !== processes.length) {
+          error.textContent = "Process IDs must be unique (IDs are compared without case sensitivity).";
+          error.hidden = false;
+          return;
+        }
+
+        const quantum = Number(scheduler.querySelector(".quantum-input").value);
+        const roundRobinSegments = processes.reduce((total, process) => total + Math.ceil(process.burst / quantum), 0);
+        if (roundRobinSegments > 2000) {
+          error.textContent = "This Round Robin input would create more than 2,000 chart segments. Increase the quantum or reduce the total burst time.";
+          error.hidden = false;
+          return;
+        }
+
+        const byArrival = (a, b) => a.arrival - b.arrival || a.index - b.index;
+        const shortestJob = (a, b) => a.burst - b.burst || byArrival(a, b);
+        const shortestRemaining = (a, b) => a.remaining - b.remaining || byArrival(a, b);
+        const priority = (a, b) => a.priority - b.priority || byArrival(a, b);
+        const algorithms = [
+          { name: "First-Come, First-Served (FCFS)", description: "Non-preemptive; processes run in arrival order.", run: () => scheduleNonPreemptive(processes, byArrival) },
+          { name: "Shortest Job First (SJF)", description: "Non-preemptive; chooses the ready process with the shortest burst.", run: () => scheduleNonPreemptive(processes, shortestJob) },
+          { name: "Shortest Remaining Time First (SRTF)", description: "Preemptive; always runs the ready process with the least remaining burst.", run: () => schedulePreemptive(processes, shortestRemaining) },
+          { name: "Round Robin (RR)", description: `Preemptive; ready processes take turns with a quantum of ${quantum}.`, run: () => scheduleRoundRobin(processes, quantum) },
+          { name: "Non-Preemptive Priority", description: "Runs the highest-priority ready process to completion; lower priority numbers rank higher.", run: () => scheduleNonPreemptive(processes, priority) },
+          { name: "Preemptive Priority", description: "A newly arrived higher-priority process can interrupt the running process; lower numbers rank higher.", run: () => schedulePreemptive(processes, priority) }
+        ];
+        results.replaceChildren(...algorithms.map(algorithm =>
+          renderScheduleResult(algorithm, processes, algorithm.run())
+        ));
+      });
+
+      return scheduler;
+    }
+
     function makeTopic(topic) {
       const column = document.createElement("article");
       column.className = `topic-column ${topic.color}`;
@@ -351,6 +725,7 @@
       list.className = "tree";
       topic.children.forEach(node => list.append(makeNode(node)));
       inner.append(list);
+      if (topic.id === "cpu-scheduling") inner.append(makeScheduler());
       branch.append(inner);
       button.addEventListener("click", () => {
         const isOpen = button.getAttribute("aria-expanded") === "true";
